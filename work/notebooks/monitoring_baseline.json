@@ -1,0 +1,42 @@
+{
+  "snapshot_date": "2025-08",
+  "label_prevalence": 0.5421,
+  "archetype_distribution": {
+    "Standard": 0.5236,
+    "Dead Weight": 0.1946,
+    "Decaying Performer": 0.1574,
+    "Rising Star": 0.1058,
+    "Hidden Gem": 0.0172,
+    "Stale Asset": 0.0013
+  },
+  "score_p25": 0.3282,
+  "score_p50": 0.5506,
+  "score_p75": 0.7379,
+  "feature_null_rates": {
+    "days_since_last_update": 0.0,
+    "content_age_days": 0.0,
+    "impressions_90d": 0.0,
+    "clicks_90d": 0.0,
+    "pageviews_90d": 0.0,
+    "ctr": 0.0,
+    "avg_position": 0.0,
+    "engagement_rate": 0.0,
+    "scroll_rate": 0.0042,
+    "search_volume": 0.0823,
+    "competition": 0.0823,
+    "word_count": 0.2566,
+    "impressions_last_30d": 0.0,
+    "impressions_prev_30d": 0.0,
+    "clicks_last_30d": 0.0,
+    "clicks_prev_30d": 0.0,
+    "days_with_impressions": 0.0,
+    "days_with_sessions": 0.0
+  },
+  "retrain_trigger_thresholds": {
+    "precision_at_500_min": 0.8,
+    "queue_overlap_rule_min": 0.6,
+    "label_prevalence_min": 0.45,
+    "label_prevalence_max": 0.65,
+    "feature_null_rate_max": 0.05
+  }
+}
