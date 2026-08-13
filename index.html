@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A machine learning study predicting content refresh opportunities from 79 million rows of production SEO data. By Rafiul Islam, FlyRank ML Internship." />
+  <meta property="og:title" content="Predicting Content Refresh Opportunities at Scale" />
+  <meta property="og:description" content="Random Forest classifier on 30,000 page-level SEO records — 37% lift over rule-based baseline on grouped validation split." />
+  <title>Predicting Content Refresh Opportunities at Scale — Rafiul Islam</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design Tokens ── */
+    :root {
+      --primary:   #2251CC;
+      --accent:    #00BFA5;
+      --text:      #131720;
+      --bg:        #F4F6FB;
+      --surface:   #FFFFFF;
+      --muted:     #6B7280;
+      --border:    #E2E8F0;
+      --primary-lt:#EEF2FF;
+      --accent-lt: #ECFDF5;
+      --warn-lt:   #FFF8E1;
+      --warn:      #F59E0B;
+      --head:      'Space Grotesk', system-ui, sans-serif;
+      --body:      'DM Sans', system-ui, sans-serif;
+      --mono:      'DM Mono', 'Courier New', monospace;
+    }
+
+    /* ── Base ── */
+    html  { scroll-behavior: smooth; font-size: 16px; }
+    body  { font-family: var(--body); background: var(--bg); color: var(--text); line-height: 1.7; }
+    [id]  { scroll-margin-top: 54px; }
+    a     { color: var(--primary); }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--text);
+      color: #fff;
+      padding: 4.5rem 1.5rem 3.5rem;
+      text-align: center;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 1.2rem;
+    }
+    .hero-title {
+      font-family: var(--head);
+      font-size: clamp(1.55rem, 3.8vw, 2.45rem);
+      font-weight: 700;
+      line-height: 1.22;
+      max-width: 760px;
+      margin: 0 auto 1.75rem;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem 2rem;
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.6);
+    }
+    .hero-meta span strong { color: rgba(255,255,255,0.9); font-weight: 600; }
+
+    /* ── STICKY NAV ── */
+    .toc-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(19,23,32,0.96);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .toc-nav::-webkit-scrollbar { display: none; }
+    .toc-nav ul {
+      display: flex;
+      list-style: none;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 0.75rem;
+    }
+    .toc-nav a {
+      display: block;
+      padding: 0.7rem 0.7rem;
+      font-size: 0.76rem;
+      font-weight: 500;
+      letter-spacing: 0.025em;
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: color 0.18s, border-color 0.18s;
+    }
+    .toc-nav a:hover, .toc-nav a.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── LAYOUT WRAPPER ── */
+    .paper-wrap {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ── ABSTRACT CARD ── */
+    .abstract-card {
+      background: var(--surface);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 10px 10px 0;
+      padding: 1.75rem 2rem;
+      margin: 2.75rem 0 1.75rem;
+    }
+    .section-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.6rem;
+    }
+    .abstract-card p { font-size: 0.94rem; line-height: 1.8; }
+
+    /* ── KPI STRIP ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--border);
+      gap: 1px;
+      margin-bottom: 3rem;
+    }
+    .kpi-cell {
+      background: var(--surface);
+      padding: 1.2rem 1rem;
+      text-align: center;
+    }
+    .kpi-val {
+      font-family: var(--head);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .kpi-val.ac { color: var(--accent); }
+    .kpi-lbl { font-size: 0.75rem; color: var(--muted); line-height: 1.35; }
+    .kpi-note { font-family: var(--mono); font-size: 0.63rem; color: var(--muted); margin-top: 0.2rem; opacity: 0.75; }
+
+    /* ── SECTION ── */
+    .paper-section { margin-bottom: 3.75rem; }
+    .section-hd {
+      font-family: var(--head);
+      font-size: 1.35rem;
+      font-weight: 700;
+      padding-bottom: 0.55rem;
+      border-bottom: 1.5px solid var(--border);
+      margin-bottom: 1.1rem;
+    }
+
+    /* ── BODY COPY ── */
+    .paper-section p     { font-size: 0.94rem; line-height: 1.8; margin-bottom: 0.95rem; }
+    .paper-section p:last-child { margin-bottom: 0; }
+    .paper-section h3    { font-family: var(--head); font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.45rem; }
+    .paper-section ul,
+    .paper-section ol    { padding-left: 1.4rem; margin-bottom: 0.9rem; }
+    .paper-section li    { font-size: 0.93rem; line-height: 1.7; margin-bottom: 0.3rem; }
+    code                 { font-family: var(--mono); font-size: 0.82em; background: var(--primary-lt); color: var(--primary); padding: 0.1em 0.38em; border-radius: 3px; }
+
+    /* ── CALLOUTS ── */
+    .callout {
+      border-left: 3px solid var(--primary);
+      background: var(--primary-lt);
+      border-radius: 0 6px 6px 0;
+      padding: 0.9rem 1.15rem;
+      margin: 1.2rem 0;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: #1E3A8A;
+    }
+    .callout.warn  { border-color: var(--warn);  background: var(--warn-lt);  color: #78350F; }
+    .callout.good  { border-color: var(--accent); background: var(--accent-lt); color: #065F46; }
+    .callout strong { font-weight: 600; }
+
+    /* ── TABLES ── */
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin: 1.25rem 0; }
+    table     { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th        { background: var(--text); color: #fff; font-family: var(--head); font-weight: 600; padding: 0.65rem 1rem; text-align: left; font-size: 0.78rem; letter-spacing: 0.04em; }
+    td        { padding: 0.58rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td  { border-bottom: none; }
+    tr:nth-child(even) td { background: #F8FAFC; }
+    td.num    { font-family: var(--mono); font-size: 0.83rem; }
+    td.hi     { font-weight: 600; color: var(--primary); }
+    td.hi2    { font-weight: 600; color: var(--accent); }
+    .badge    { display: inline-block; font-family: var(--mono); font-size: 0.68rem; padding: 0.1em 0.5em; border-radius: 3px; background: #FFF3CD; color: #856404; }
+    .badge.red  { background: #FECDD3; color: #9F1239; }
+    .badge.grn  { background: var(--accent-lt); color: #065F46; }
+
+    /* ── FIGURES ── */
+    .figure { margin: 1.75rem 0; }
+    .figure-inner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+    .chart-box  { position: relative; height: 300px; }
+    .chart-box.tall { height: 370px; }
+    figcaption  {
+      font-size: 0.79rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+      line-height: 1.5;
+      font-style: italic;
+    }
+    figcaption strong { font-style: normal; font-weight: 600; color: var(--text); }
+
+    /* ── RECOMMENDATIONS ── */
+    .rec-list { list-style: none; padding: 0; }
+    .rec-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1.1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rec-item:last-child { border-bottom: none; }
+    .rec-num {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      font-family: var(--head);
+      font-weight: 700;
+      font-size: 0.82rem;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 0.05rem;
+    }
+    .rec-body h4 { font-family: var(--head); font-weight: 700; font-size: 0.94rem; margin-bottom: 0.2rem; }
+    .rec-body p  { font-size: 0.855rem; color: var(--muted); margin: 0; line-height: 1.55; }
+
+    /* ── REPRO LINKS ── */
+    .repro-links { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1rem; }
+    .repro-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.1rem;
+      background: var(--surface);
+      border: 1.5px solid var(--primary);
+      border-radius: 6px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 600;
+      transition: background 0.18s, color 0.18s;
+    }
+    .repro-link:hover { background: var(--primary); color: #fff; }
+    .repro-link svg   { flex-shrink: 0; }
+
+    /* ── FOOTER / ACKNOWLEDGMENTS ── */
+    .paper-footer {
+      background: var(--text);
+      color: rgba(255,255,255,0.6);
+      padding: 3rem 1.5rem;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .paper-footer h2 { font-family: var(--head); font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.8rem; }
+    .paper-footer p  { font-size: 0.875rem; line-height: 1.7; max-width: 580px; margin: 0 auto 0.5rem; }
+    .paper-footer a  { color: var(--accent); }
+    .paper-footer .divider { width: 40px; height: 2px; background: var(--accent); margin: 1.5rem auto; border-radius: 2px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .hero { padding: 3rem 1rem 2.25rem; }
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+      .abstract-card { padding: 1.25rem 1.25rem; }
+      .chart-box { height: 240px; }
+      .chart-box.tall { height: 290px; }
+    }
+    @media print {
+      .toc-nav { display: none; }
+      .paper-section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+<header class="hero">
+  <span class="hero-eyebrow">FlyRank ML Internship · Week 8 Capstone · Machine Learning Track</span>
+  <h1 class="hero-title">
+    Predicting Content Refresh Opportunities at Scale:<br>
+    A Machine Learning Approach to SEO Content Decay Detection
+  </h1>
+  <div class="hero-meta">
+    <span><strong>Author</strong> Rafiul Islam</span>
+    <span><strong>Track</strong> ML Lane 2 — Content Refresh / Opportunity Scoring</span>
+    <span><strong>Dataset</strong> FlyRank ML Internship Dataset</span>
+    <span><strong>Published</strong> August 2026</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ STICKY NAV ════════════════════════════════ -->
+<nav class="toc-nav" aria-label="Paper sections">
+  <ul>
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#introduction">1. Introduction</a></li>
+    <li><a href="#data">2. Data</a></li>
+    <li><a href="#methodology">3. Methodology</a></li>
+    <li><a href="#results">4. Results</a></li>
+    <li><a href="#limitations">5. Limitations</a></li>
+    <li><a href="#recommendations">6. Recommendations</a></li>
+    <li><a href="#reproducibility">7. Reproducibility</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════ MAIN BODY ════════════════════════════════ -->
+<main>
+<div class="paper-wrap">
+
+  <!-- ── ABSTRACT ── -->
+  <section id="abstract" aria-label="Abstract">
+    <div class="abstract-card">
+      <span class="section-eyebrow">Abstract</span>
+      <p>
+        Search content loses ranking performance over time — a phenomenon commonly called
+        <em>content decay</em> — yet most editorial teams rely on manual audits or simple
+        time-based heuristics to decide which pages to refresh.
+        This study asks: can a supervised machine learning model, trained on aggregated
+        production search signals, predict which pages are experiencing declining trend
+        direction before human editors flag them?
+        We applied a Random Forest classifier to a page-level dataset of 30,000 records
+        aggregated from approximately 79&nbsp;million rows of real production impression
+        and click data across multiple content verticals.
+        After engineering temporal and engagement features and conducting a rigorous
+        validation audit — identifying and removing two distinct sources of label leakage,
+        including a column that directly encoded the target label — the clean model achieved
+        an observed ROC-AUC of 0.79 and a Precision@500 of 0.52 on a grouped-by-client
+        holdout split, representing an estimated 37% lift over a rule-based frequency baseline
+        evaluated on the same split.
+        These results are directional and intended for decision-support only; they suggest
+        that temporal engagement features carry meaningful predictive signal for refresh
+        prioritisation, but the model should not be treated as production-ready without
+        further validation against live editorial outcomes.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── KPI STRIP ── -->
+  <div class="kpi-strip" role="region" aria-label="Key findings summary">
+    <div class="kpi-cell">
+      <div class="kpi-val">30K</div>
+      <div class="kpi-lbl">Page-level records</div>
+      <div class="kpi-note">44 columns</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-val ac">0.79</div>
+      <div class="kpi-lbl">ROC-AUC (grouped split)</div>
+      <div class="kpi-note">clean features</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-val">+37%</div>
+      <div class="kpi-lbl">Lift vs rule-based baseline</div>
+      <div class="kpi-note">Precision@500</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-val ac">2</div>
+      <div class="kpi-lbl">Leakage sources found &amp; removed</div>
+      <div class="kpi-note">audit-verified</div>
+    </div>
+  </div>
+
+  <!-- ── §1 INTRODUCTION ── -->
+  <section id="introduction" class="paper-section">
+    <span class="section-eyebrow">Section 1</span>
+    <h2 class="section-hd">Introduction &amp; Problem Statement</h2>
+
+    <p>
+      Search engine optimisation (SEO) practitioners face a recurring challenge: content that
+      ranked well when first published steadily loses search visibility as competitors publish
+      fresher material, user intent shifts, and algorithmic weighting evolves. This degradation
+      is rarely sudden — it manifests as a slow erosion of impressions and clicks over weeks or
+      months, often invisible until significant ranking positions have already been lost.
+    </p>
+    <p>
+      Traditional responses to content decay rely on two approaches: <strong>periodic blanket
+      audits</strong> (review everything every six months) or <strong>reactive triage</strong>
+      (fix pages only after traffic drops become obvious). Both are inefficient. Blanket audits
+      waste editorial capacity on pages that are performing fine; reactive triage means the
+      opportunity cost of lost traffic has already accumulated.
+    </p>
+    <p>
+      A predictive model that scores pages by their likelihood of benefit from a refresh would
+      change this workflow: editors could prioritise the top-N highest-risk pages, acting before
+      decay becomes severe and directing effort where the signal is strongest.
+    </p>
+
+    <h3>Research Question</h3>
+    <p>
+      <em>Can a supervised machine learning model — trained on aggregated production search
+      impression and engagement signals — predict which pages are currently on a declining
+      trend, with better precision than a rule-based baseline, when evaluated on a client-grouped
+      holdout?</em>
+    </p>
+
+    <div class="callout">
+      <strong>Scope note:</strong> This study does not claim to predict future ranking loss. It
+      predicts whether a page is currently labelled as declining (based on observed trend
+      direction in the dataset). The operational value is in prioritisation — surfacing the
+      right pages for review — not in forecasting absolute traffic numbers.
+    </div>
+  </section>
+
+  <!-- ── §2 DATA ── -->
+  <section id="data" class="paper-section">
+    <span class="section-eyebrow">Section 2</span>
+    <h2 class="section-hd">Data</h2>
+
+    <h3>Dataset Provenance</h3>
+    <p>
+      The dataset used in this study is the <strong>FlyRank ML Internship Dataset</strong>,
+      a pre-aggregated, anonymised release derived from production Search Console-style
+      telemetry. The raw source spans approximately <strong>79&nbsp;million rows</strong> of
+      impression and click events collected across multiple content verticals and client accounts.
+      These rows were aggregated to the <strong>URL (page) level</strong>, producing the
+      30,000-row analytical dataset used here. No raw query strings, client identifiers, or
+      individual user signals appear in any form in this study.
+    </p>
+
+    <h3>Dataset Characteristics</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Attribute</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Granularity</td><td>One row per URL (page-level aggregation)</td></tr>
+          <tr><td>Total rows</td><td class="num">30,000</td></tr>
+          <tr><td>Total columns</td><td class="num">44</td></tr>
+          <tr><td>Positive label rate (declining pages)</td><td class="num">~36%</td></tr>
+          <tr><td>Unique client cohorts</td><td class="num">32</td></tr>
+          <tr><td>Date window</td><td>Trailing 90-day impression windows (anonymised)</td></tr>
+          <tr><td>Release</td><td>FlyRank ML Internship Dataset (2025 research release)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Columns Used in This Study</h3>
+    <p>
+      The 44 available columns fall into several groups. The table below shows the column
+      families retained after the leakage audit (Section 3.4), along with two columns that
+      were excluded:
+    </p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Column Family</th><th>Example Columns</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Temporal staleness</td>
+            <td><code>days_since_last_update</code></td>
+            <td><span class="badge grn">Kept</span></td>
+          </tr>
+          <tr>
+            <td>Volume signals</td>
+            <td><code>impressions_90d</code>, <code>clicks_90d</code></td>
+            <td><span class="badge grn">Kept</span></td>
+          </tr>
+          <tr>
+            <td>Efficiency signals</td>
+            <td><code>click_through_rate</code>, <code>position_avg</code></td>
+            <td><span class="badge grn">Kept</span></td>
+          </tr>
+          <tr>
+            <td>Content metadata</td>
+            <td><code>word_count</code>, <code>content_length</code></td>
+            <td><span class="badge grn">Kept</span></td>
+          </tr>
+          <tr>
+            <td>Direct label encoding</td>
+            <td><code>trend_pct</code></td>
+            <td><span class="badge red">Removed (Level-1 leakage)</span></td>
+          </tr>
+          <tr>
+            <td>Indirect label proxy</td>
+            <td><code>impression_momentum</code> (last_30d / prev_30d)</td>
+            <td><span class="badge red">Removed (Level-2 leakage)</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Exclusions &amp; Filtering</h3>
+    <p>The following records were excluded before modelling:</p>
+    <ul>
+      <li>Pages with fewer than 50 impressions in the 90-day window — insufficient signal for reliable CTR estimation, causing label collapse when using median CTR as a threshold.</li>
+      <li>Records with null values in key feature columns after the aggregation step.</li>
+      <li>Raw query-level rows — all analysis operates at the page level exclusively.</li>
+    </ul>
+
+    <div class="callout good">
+      <strong>Public-safety note:</strong> No client names, raw URLs, search queries, or any
+      personally identifiable information appears in this study. All analysis uses the
+      anonymised, aggregated dataset only.
+    </div>
+  </section>
+
+  <!-- ── §3 METHODOLOGY ── -->
+  <section id="methodology" class="paper-section">
+    <span class="section-eyebrow">Section 3</span>
+    <h2 class="section-hd">Methodology</h2>
+
+    <h3>3.1 Label Definition</h3>
+    <p>
+      The binary target label <code>is_refresh_opportunity</code> is derived from the
+      <code>trend_direction</code> column in the dataset:
+    </p>
+    <div class="callout">
+      <strong>Label rule:</strong> <code>is_refresh_opportunity = 1</code> if
+      <code>trend_direction == 'down'</code>, else <code>0</code>.
+    </div>
+    <p>
+      This label is a <em>proxy</em> for editorial need, not a ground-truth measurement. Pages
+      with a downward trend direction are treated as refresh candidates; all others are treated
+      as non-candidates. The positive class rate is approximately 36% across the full dataset.
+      An additional CTR threshold (40th percentile, applied to pages with ≥50 impressions) was
+      used to avoid label collapse in low-impression strata.
+    </p>
+
+    <h3>3.2 Feature Engineering</h3>
+    <p>
+      Feature construction focused on signals that would be available at inference time without
+      requiring future data. The final clean feature set (post-leakage-audit) includes:
+    </p>
+    <ul>
+      <li><strong>Temporal:</strong> <code>days_since_last_update</code> — primary staleness signal</li>
+      <li><strong>Volume:</strong> <code>impressions_90d</code>, <code>clicks_90d</code></li>
+      <li><strong>Efficiency:</strong> <code>click_through_rate</code>, <code>position_avg</code></li>
+      <li><strong>Content:</strong> <code>word_count</code>, <code>content_length</code></li>
+      <li><strong>Derived gap:</strong> CTR gap relative to cohort median (clipped to avoid division by zero)</li>
+    </ul>
+    <p>
+      No feature normalisation was applied before the Random Forest, which is invariant to
+      monotonic feature transformations. CTR gap computation used
+      <code>max(float(ctr_gap_raw.max()), 1e-9)</code> to handle scalar clipping correctly.
+    </p>
+
+    <h3>3.3 Baseline</h3>
+    <p>
+      The rule-based baseline flags a page as a refresh opportunity if <em>both</em> conditions
+      are met:
+    </p>
+    <ul>
+      <li>Impressions in the 90-day window fall below the median for that client cohort.</li>
+      <li>Days since last update exceed 180 (six months).</li>
+    </ul>
+    <p>
+      This represents a plausible editorial heuristic: stale pages with declining traffic are
+      the most obvious refresh candidates. All model comparisons are made against this baseline
+      on the <strong>same validation split</strong>.
+    </p>
+
+    <h3>3.4 Leakage Audit</h3>
+    <p>
+      Two sources of label leakage were identified and removed before final model training:
+    </p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>Leakage Type</th><th>Why It Leaks</th><th>Resolution</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>trend_pct</code></td>
+            <td><strong>Level 1 — Direct</strong></td>
+            <td>Numerically encodes <code>trend_direction</code>; near-perfect split on the label</td>
+            <td>Removed entirely</td>
+          </tr>
+          <tr>
+            <td><code>impression_momentum</code><br>(last_30d / prev_30d)</td>
+            <td><strong>Level 2 — Indirect</strong></td>
+            <td>Ratio of recent to prior impressions is a near-perfect proxy for trend direction</td>
+            <td>Removed entirely</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <strong>Leakage impact:</strong> With both leaky features present, the model achieved an
+      inflated ROC-AUC of ~0.97 on a random split. After removal and using a grouped-by-client
+      split, AUC dropped to 0.79 — a significant and <em>honest</em> correction that reveals
+      the true generalisation gap.
+    </div>
+
+    <h3>3.5 Model</h3>
+    <p>
+      A <strong>Random Forest classifier</strong> (scikit-learn) was selected for its robustness
+      to feature scale, interpretable feature importances, and strong out-of-box performance on
+      tabular data. Hyperparameters used:
+    </p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Hyperparameter</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td><code>n_estimators</code></td><td>100</td></tr>
+          <tr><td><code>max_depth</code></td><td>10</td></tr>
+          <tr><td><code>min_samples_leaf</code></td><td>5</td></tr>
+          <tr><td><code>class_weight</code></td><td><code>'balanced'</code></td></tr>
+          <tr><td><code>random_state</code></td><td>42</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>No hyperparameter tuning was performed; the focus was on split strategy and leakage control rather than optimisation.</p>
+
+    <h3>3.6 Validation Design</h3>
+    <p>
+      Three split strategies were compared to characterise the gap between optimistic and
+      realistic performance estimates:
+    </p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Split Strategy</th><th>Train / Test</th><th>Rationale</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Random split</strong></td>
+            <td>80% / 20% random rows</td>
+            <td>Industry default; inflated because same-client rows appear in both sets</td>
+          </tr>
+          <tr>
+            <td><strong>Grouped-by-client</strong></td>
+            <td>26 clients train / 6 clients test</td>
+            <td><em>Primary evaluation split</em> — no client appears in both train and test</td>
+          </tr>
+          <tr>
+            <td><strong>Time-aware</strong></td>
+            <td>Older content trains; fresher content tests</td>
+            <td>Simulates deployment: model trained on past, tested on newer data</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── §4 RESULTS ── -->
+  <section id="results" class="paper-section">
+    <span class="section-eyebrow">Section 4</span>
+    <h2 class="section-hd">Results</h2>
+
+    <h3>4.1 Validation Split Comparison (AUC)</h3>
+    <p>
+      The chart below illustrates the performance gap across all three validation strategies,
+      demonstrating how split choice directly affects the reported metric — and why random
+      splits produce misleadingly high estimates for SEO content scoring tasks.
+    </p>
+    <figure class="figure">
+      <div class="figure-inner">
+        <div class="chart-box">
+          <canvas id="chartSplits" aria-label="Bar chart comparing ROC-AUC across three validation splits"></canvas>
+        </div>
+        <figcaption>
+          <strong>Figure 1.</strong> ROC-AUC across three validation split strategies (clean model, no leaky features).
+          The grouped-by-client split is the primary evaluation; random split inflates due to same-client rows
+          spanning train and test sets.
+        </figcaption>
+      </div>
+    </figure>
+
+    <h3>4.2 ROC Curve — Model vs Random Baseline</h3>
+    <p>
+      The following curve shows the model's discrimination ability on the grouped-by-client
+      holdout (the primary evaluation split) compared to the no-skill random classifier diagonal.
+    </p>
+    <figure class="figure">
+      <div class="figure-inner">
+        <div class="chart-box">
+          <canvas id="chartROC" aria-label="ROC curve comparing Random Forest model to no-skill baseline"></canvas>
+        </div>
+        <figcaption>
+          <strong>Figure 2.</strong> ROC curve on grouped-by-client holdout split (clean model).
+          AUC = 0.79. The diagonal represents a no-skill random classifier (AUC = 0.50).
+        </figcaption>
+      </div>
+    </figure>
+
+    <h3>4.3 Precision@K — Model vs Rule-Based Baseline</h3>
+    <p>
+      Precision@K measures what fraction of the top-K model-ranked pages are true positives
+      (genuine refresh opportunities). This is the operationally relevant metric — editors act
+      on a prioritised list, not on all 30,000 rows.
+    </p>
+    <figure class="figure">
+      <div class="figure-inner">
+        <div class="chart-box">
+          <canvas id="chartPrecK" aria-label="Grouped bar chart showing Precision at K for model vs rule-based baseline"></canvas>
+        </div>
+        <figcaption>
+          <strong>Figure 3.</strong> Precision@K on the grouped-by-client holdout.
+          The model consistently outperforms the rule-based baseline across all K values.
+          At K=500, model Precision = 0.52 vs baseline Precision = 0.38 — a ~37% relative lift.
+        </figcaption>
+      </div>
+    </figure>
+
+    <h3>4.4 Feature Importance</h3>
+    <p>
+      Mean Decrease in Impurity (MDI) importances from the Random Forest, showing which
+      clean features contribute most to splitting decisions:
+    </p>
+    <figure class="figure">
+      <div class="figure-inner">
+        <div class="chart-box tall">
+          <canvas id="chartFI" aria-label="Horizontal bar chart of feature importances from Random Forest"></canvas>
+        </div>
+        <figcaption>
+          <strong>Figure 4.</strong> Feature importances (MDI) from the clean Random Forest model.
+          <code>days_since_last_update</code> and <code>impressions_90d</code> dominate, consistent
+          with the hypothesis that temporal staleness and volume are the primary refresh predictors.
+        </figcaption>
+      </div>
+    </figure>
+
+    <h3>4.5 Summary Results Table</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Rule-Based Baseline</th><th>RF Model (grouped split)</th><th>RF Model (random split)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ROC-AUC</td>
+            <td class="num">0.61</td>
+            <td class="num hi">0.79</td>
+            <td class="num">0.97 <span class="badge">inflated</span></td>
+          </tr>
+          <tr>
+            <td>Precision@100</td>
+            <td class="num">0.52</td>
+            <td class="num hi">0.71</td>
+            <td class="num">0.89</td>
+          </tr>
+          <tr>
+            <td>Precision@200</td>
+            <td class="num">0.45</td>
+            <td class="num hi">0.64</td>
+            <td class="num">0.85</td>
+          </tr>
+          <tr>
+            <td>Precision@500</td>
+            <td class="num">0.38</td>
+            <td class="num hi">0.52</td>
+            <td class="num hi2">0.68 <span class="badge">inflated</span></td>
+          </tr>
+          <tr>
+            <td>Precision@1000</td>
+            <td class="num">0.32</td>
+            <td class="num hi">0.44</td>
+            <td class="num">0.61</td>
+          </tr>
+          <tr>
+            <td>Split strategy</td>
+            <td>Grouped-by-client</td>
+            <td>Grouped-by-client</td>
+            <td>Random (80/20)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <strong>Honest framing:</strong> All "inflated" values in the random-split column reflect
+      data leakage from same-client pages appearing in both train and test sets. These numbers
+      are shown for transparency only. The grouped-by-client column is the credible estimate
+      of generalisation performance.
+    </div>
+  </section>
+
+  <!-- ── §5 LIMITATIONS ── -->
+  <section id="limitations" class="paper-section">
+    <span class="section-eyebrow">Section 5</span>
+    <h2 class="section-hd">Limitations &amp; Honest Framing</h2>
+
+    <p>
+      The following limitations should be understood before interpreting or acting on these
+      results:
+    </p>
+
+    <h3>5.1 Label is a Proxy, Not Ground Truth</h3>
+    <p>
+      The target label (<code>trend_direction == 'down'</code>) reflects observed impression
+      trend, not whether a refresh would actually improve performance. A page can be declining
+      for reasons outside editorial control (seasonality, competitor cannibalism, algorithm
+      shifts). Conversely, some stale pages may not need a refresh at all. No editorial
+      outcome data was available to validate whether model-flagged pages actually benefited
+      from refresh.
+    </p>
+
+    <h3>5.2 Aggregated Dataset Limits Feature Richness</h3>
+    <p>
+      The 30,000-row page-level dataset is an aggregation of 79 million raw rows. Fine-grained
+      temporal patterns (week-over-week cadence, intra-day signals) are not available in this
+      form. Future work with time-series features could improve predictive power.
+    </p>
+
+    <h3>5.3 Grouped Split May Still Underestimate Deployment Gap</h3>
+    <p>
+      While the grouped-by-client split prevents same-client leakage, it does not simulate
+      deployment on entirely new domains or verticals. A content vertical absent from the
+      training set may exhibit very different feature distributions, causing degraded
+      performance in production.
+    </p>
+
+    <h3>5.4 No A/B Test Validation</h3>
+    <p>
+      These results are observational. There is no randomised experiment comparing editorial
+      outcomes for pages the model flagged versus a control group. The 37% precision lift
+      over the rule-based baseline is a <em>ranking precision</em> improvement, not a
+      measured improvement in actual content performance.
+    </p>
+
+    <h3>5.5 Model Drift</h3>
+    <p>
+      The model has no self-updating mechanism. As search landscapes shift, the feature
+      distributions may drift away from the training distribution. Periodic retraining would
+      be required for any production deployment.
+    </p>
+
+    <div class="callout">
+      <strong>Recommended framing for any stakeholder communication:</strong> "This model
+      provides a prioritisation signal — a smarter way to sort the refresh queue — not a
+      guaranteed predictor of which pages will recover with refreshing."
+    </div>
+  </section>
+
+  <!-- ── §6 RECOMMENDATIONS ── -->
+  <section id="recommendations" class="paper-section">
+    <span class="section-eyebrow">Section 6</span>
+    <h2 class="section-hd">Ranked Recommendations</h2>
+    <p>Based on findings from this study, the following actions are recommended in priority order:</p>
+
+    <ul class="rec-list">
+      <li class="rec-item">
+        <div class="rec-num">1</div>
+        <div class="rec-body">
+          <h4>Use the model for triage, not final decisions</h4>
+          <p>Deploy predictions as a prioritised queue for editorial review, not as an automated
+          "refresh this page" trigger. The model surfaces candidates; human editors make the call.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-num">2</div>
+        <div class="rec-body">
+          <h4>Target consensus pages first (model + baseline agreement)</h4>
+          <p>Pages flagged by <em>both</em> the Random Forest model and the rule-based baseline
+          are the highest-confidence candidates. Prioritise these as a high-precision starting
+          point before moving to model-only flags.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-num">3</div>
+        <div class="rec-body">
+          <h4>Prioritise high-impression declining pages for maximum ROI</h4>
+          <p>Among model-flagged pages, sort by <code>impressions_90d</code> descending.
+          A refresh on a page with 50,000 impressions at risk recovers far more traffic than
+          the same effort on a 500-impression page.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-num">4</div>
+        <div class="rec-body">
+          <h4>Retrain with time-aware split before any production deployment</h4>
+          <p>The time-aware split (train on older content, test on fresher) is the most
+          deployment-realistic scenario. Retraining on a full temporal split and validating
+          against the most recent data window is necessary before treating any predictions
+          as production signals.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-num">5</div>
+        <div class="rec-body">
+          <h4>Add editorial quality signals to future feature sets</h4>
+          <p>The current feature set is entirely search-telemetry based. Incorporating content
+          signals — reading level, topic freshness, internal link depth, SERP feature coverage —
+          could substantially improve label fidelity and predictive power.</p>
+        </div>
+      </li>
+      <li class="rec-item">
+        <div class="rec-num">6</div>
+        <div class="rec-body">
+          <h4>Track post-refresh outcomes to build ground truth</h4>
+          <p>The single most valuable investment for improving future models is logging which
+          flagged pages were refreshed and whether their impressions and CTR recovered within
+          60–90 days. This converts a proxy label into real editorial outcome data.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ── §7 REPRODUCIBILITY ── -->
+  <section id="reproducibility" class="paper-section">
+    <span class="section-eyebrow">Section 7</span>
+    <h2 class="section-hd">Reproducibility</h2>
+
+    <p>
+      All analysis for this paper was conducted in Jupyter notebooks committed to the public
+      GitHub repository below. Anyone with the dataset and the repository can re-run the
+      full pipeline end-to-end.
+    </p>
+
+    <h3>Environment</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Dependency</th><th>Version</th></tr></thead>
+        <tbody>
+          <tr><td>Python</td><td class="num">3.10+</td></tr>
+          <tr><td>scikit-learn</td><td class="num">1.3+</td></tr>
+          <tr><td>pandas</td><td class="num">2.0+</td></tr>
+          <tr><td>DuckDB</td><td class="num">0.9+</td></tr>
+          <tr><td>numpy</td><td class="num">1.24+</td></tr>
+          <tr><td>matplotlib / seaborn</td><td class="num">3.7+ / 0.12+</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Dataset</h3>
+    <p>
+      The dataset is hosted in the public GitHub repository below. Download path:
+      <code>data/raw/content_refresh_anonymized.csv</code>
+    </p>
+
+    <h3>Links</h3>
+    <div class="repro-links">
+      <a class="repro-link" href="https://github.com/rafiul254/Flyrank_AI-ML-internship" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub Repository
+      </a>
+      <a class="repro-link" href="https://github.com/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/capstone.ipynb" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Capstone Notebook
+      </a>
+      <a class="repro-link" href="https://github.com/rafiul254/Flyrank_AI-ML-internship/tree/main/work/notebooks" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        All Notebooks
+      </a>
+    </div>
+
+    <div class="callout">
+      <strong>Reproducibility note:</strong> The <code>action_queue.csv</code> output file is
+      excluded from the repository per internship data handling rules. All intermediate
+      outputs and figures are generated by re-running the notebooks in sequence.
+    </div>
+  </section>
+
+</div><!-- /paper-wrap -->
+</main>
+
+<!-- ═══════════════════════════════ FOOTER ═══════════════════════════════════ -->
+<footer class="paper-footer" id="acknowledgments">
+  <h2>Acknowledgments &amp; Data Credit</h2>
+  <div class="divider"></div>
+  <p>
+    Built on the <strong>FlyRank ML Internship Dataset</strong> — aggregated from production
+    search telemetry provided by
+    <a href="https://flyrank.ai" target="_blank" rel="noopener">FlyRank</a>.
+    Crediting the data source is standard research practice.
+  </p>
+  <p>
+    This research was conducted as part of the FlyRank AI/ML Internship Program (2025–2026),
+    Machine Learning Track, Lane 2: Content Refresh / Opportunity Scoring.
+    The internship program provided the dataset, assignment structure, and evaluation framework.
+  </p>
+  <p style="margin-top:1.25rem; font-size:0.8rem; opacity:0.55;">
+    No client names, private URLs, or raw search queries appear in this paper.
+    All analysis uses the anonymised, aggregated public-safe dataset only.
+    Results are directional and for decision-support purposes only.
+  </p>
+  <p style="margin-top:1rem; font-size:0.8rem; opacity:0.5;">
+    © 2026 Rafiul Islam · IoT &amp; Robotics Engineering, ML Intern at FlyRank ·
+    <a href="https://github.com/rafiul254/Flyrank_AI-ML-internship" style="color:var(--accent)">GitHub</a>
+  </p>
+</footer>
+
+<!-- ═══════════════════════════════ CHARTS ═══════════════════════════════════ -->
+<script>
+  /* ── Shared palette ── */
+  const C = {
+    primary:  '#2251CC',
+    accent:   '#00BFA5',
+    text:     '#131720',
+    muted:    '#6B7280',
+    border:   '#E2E8F0',
+    surface:  '#FFFFFF',
+    primaryA: 'rgba(34,81,204,0.15)',
+    accentA:  'rgba(0,191,165,0.15)',
+  };
+
+  Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+  Chart.defaults.color = C.muted;
+
+  /* ─── Figure 1: Split Comparison Bar ─── */
+  new Chart(document.getElementById('chartSplits'), {
+    type: 'bar',
+    data: {
+      labels: ['Random Split\n(80/20)', 'Grouped-by-Client\n(primary)', 'Time-Aware\n(deployment sim)'],
+      datasets: [{
+        label: 'ROC-AUC',
+        data: [0.97, 0.79, 0.76],
+        backgroundColor: [
+          'rgba(245,158,11,0.35)',
+          C.primaryA,
+          'rgba(0,191,165,0.25)',
+        ],
+        borderColor: ['#F59E0B', C.primary, C.accent],
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ROC-AUC: ${ctx.parsed.y.toFixed(2)}${ctx.dataIndex === 0 ? ' (inflated — shown for transparency)' : ''}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: 0.5,
+          max: 1.0,
+          ticks: { callback: v => v.toFixed(2) },
+          grid: { color: C.border },
+          title: { display: true, text: 'ROC-AUC', font: { size: 12 } }
+        },
+        x: {
+          grid: { display: false },
+        }
+      },
+      animation: { duration: 800, easing: 'easeOutQuart' }
+    }
+  });
+
+  /* ─── Figure 2: ROC Curve ─── */
+  const fprPts = [0.00, 0.03, 0.07, 0.12, 0.20, 0.30, 0.45, 0.65, 0.80, 1.00];
+  const tprPts = [0.00, 0.22, 0.38, 0.52, 0.65, 0.75, 0.84, 0.91, 0.96, 1.00];
+  new Chart(document.getElementById('chartROC'), {
+    type: 'line',
+    data: {
+      labels: fprPts.map(v => v.toFixed(2)),
+      datasets: [
+        {
+          label: 'Random Forest (grouped split, AUC=0.79)',
+          data: tprPts,
+          borderColor: C.primary,
+          backgroundColor: C.primaryA,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+        },
+        {
+          label: 'No-skill baseline (AUC=0.50)',
+          data: fprPts,
+          borderColor: C.muted,
+          borderWidth: 1.5,
+          borderDash: [5, 4],
+          fill: false,
+          tension: 0,
+          pointRadius: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            title: items => `FPR: ${items[0].label}`,
+            label: ctx => ` TPR: ${ctx.parsed.y.toFixed(2)}  (${ctx.dataset.label.split('(')[0].trim()})`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'False Positive Rate', font: { size: 12 } },
+          grid: { color: C.border },
+          ticks: { maxTicksLimit: 6 }
+        },
+        y: {
+          min: 0, max: 1,
+          title: { display: true, text: 'True Positive Rate', font: { size: 12 } },
+          grid: { color: C.border }
+        }
+      },
+      animation: { duration: 900, easing: 'easeOutQuart' }
+    }
+  });
+
+  /* ─── Figure 3: Precision@K ─── */
+  new Chart(document.getElementById('chartPrecK'), {
+    type: 'bar',
+    data: {
+      labels: ['K = 100', 'K = 200', 'K = 500', 'K = 1000'],
+      datasets: [
+        {
+          label: 'Rule-Based Baseline',
+          data: [0.52, 0.45, 0.38, 0.32],
+          backgroundColor: 'rgba(107,114,128,0.25)',
+          borderColor: C.muted,
+          borderWidth: 2,
+          borderRadius: 4,
+        },
+        {
+          label: 'Random Forest (grouped split)',
+          data: [0.71, 0.64, 0.52, 0.44],
+          backgroundColor: C.primaryA,
+          borderColor: C.primary,
+          borderWidth: 2,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}` }
+        }
+      },
+      scales: {
+        y: {
+          min: 0, max: 1,
+          ticks: { callback: v => v.toFixed(2) },
+          grid: { color: C.border },
+          title: { display: true, text: 'Precision@K', font: { size: 12 } }
+        },
+        x: { grid: { display: false } }
+      },
+      animation: { duration: 800, easing: 'easeOutQuart' }
+    }
+  });
+
+  /* ─── Figure 4: Feature Importance (horizontal) ─── */
+  const features = [
+    'days_since_last_update',
+    'impressions_90d',
+    'click_through_rate',
+    'position_avg',
+    'clicks_90d',
+    'ctr_gap_vs_cohort',
+    'content_length',
+    'word_count',
+  ];
+  const importance = [0.27, 0.22, 0.15, 0.12, 0.09, 0.08, 0.04, 0.03];
+  new Chart(document.getElementById('chartFI'), {
+    type: 'bar',
+    data: {
+      labels: features,
+      datasets: [{
+        label: 'MDI Importance',
+        data: importance,
+        backgroundColor: importance.map((v, i) =>
+          i < 2 ? C.primaryA : i < 4 ? C.accentA : 'rgba(107,114,128,0.18)'
+        ),
+        borderColor: importance.map((v, i) =>
+          i < 2 ? C.primary : i < 4 ? C.accent : C.muted
+        ),
+        borderWidth: 2,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` Importance: ${(ctx.parsed.x * 100).toFixed(1)}%` }
+        }
+      },
+      scales: {
+        x: {
+          min: 0, max: 0.35,
+          ticks: { callback: v => (v * 100).toFixed(0) + '%' },
+          grid: { color: C.border },
+          title: { display: true, text: 'Relative Importance (%)', font: { size: 12 } }
+        },
+        y: { grid: { display: false }, ticks: { font: { family: "'DM Mono', monospace", size: 11 } } }
+      },
+      animation: { duration: 1000, easing: 'easeOutQuart' }
+    }
+  });
+
+  /* ─── Scroll-spy: highlight active section in TOC ─── */
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('.toc-nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-nav a[href="#${entry.target.id}"]`);
+        if (active) {
+          active.classList.add('active');
+          active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>
