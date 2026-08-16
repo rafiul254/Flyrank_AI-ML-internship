@@ -1,4 +1,4 @@
-# work/ — your space
+# work/ — My space
 
 Everything you build lives here: lane experiments, notebooks, figures, and your capstone
 report. The rest of the repo is the shared reference; this folder is yours.
