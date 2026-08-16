@@ -1,60 +1,193 @@
-# work/ — My space
+# WeeklyCoach — AI Weekly Review Agent
 
-Everything you build lives here: lane experiments, notebooks, figures, and your capstone
-report. The rest of the repo is the shared reference; this folder is yours.
+> A Sunday-night planning agent built on Claude Projects. It runs a structured weekly review in three phases, caps your task list at five, and never makes you feel bad about what you didn't finish.
 
-## Rules of the road
+---
 
-1. **Copy, don't edit.** Need to change the pipeline? Copy the script here
-   (e.g. `work/scripts/03_train_model_v2.py`) or adjust the feature lists in
-   `scripts/ml_utils.py`. The reference pipeline in `scripts/` stays pristine — it's the
-   baseline you compare against, and reviewers expect to find it unchanged.
-2. **No datasets in git.** CSVs inside `work/` are gitignored, and CI fails if any dataset
-   CSV is committed anywhere in the repo. Small summary tables belong in your report as
-   markdown, not as data files. Metrics JSONs are the opposite: keep files like
-   `work/outputs/*.json` **committed** — they are the receipts your report's numbers trace
-   back to. Don't add ignore rules that hide them.
-3. **Stay reproducible.** Fix your random seeds and note them in your report. Someone with a
-   fresh clone should be able to re-run your work from your instructions alone.
-4. **Public-safety language.** Everything here may end up public with your submission:
-   observed / measured / directional / decision-support — no client-identifying details,
-   no causal claims without a design (see `DATA_USE.md`).
+## What It Does and Who It's For
 
-## Suggested layout
+WeeklyCoach is a personal productivity agent designed for students and early-career professionals who want a low-friction weekly review without the guilt spiral.
 
-```text
-work/
-  notebooks/            your experiment notebooks
-  scripts/              copied + modified pipeline pieces
-  figures/              charts for your report
-  capstone_report.md    your capstone write-up (start from the template)
+Every Sunday, you open the agent and it walks you through three phases:
+
+1. **Review** — reflect on what you actually did this week, without judgment
+2. **Plan** — pick a maximum of five tasks for the coming week (the agent enforces this cap)
+3. **Commit** — the agent summarises your plan and asks for explicit confirmation before saving anything to memory
+
+It is built for people who find traditional productivity systems either too rigid or too easy to ignore. The no-guilt rule is a deliberate design choice: uncompleted tasks are acknowledged and either carried forward or dropped — never used as a reason to spiral.
+
+---
+
+## Architecture
+
+```
+User (Claude.ai chat interface)
+        │
+        ▼
+Claude Projects — WeeklyCoach Project
+        │
+        ├── System Prompt (WeeklyCoach personality + rules)
+        │       • 3-phase structure enforced
+        │       • 5-task cap rule
+        │       • No-guilt framing
+        │       • Explicit confirmation before memory save
+        │
+        └── Claude Model (claude-sonnet-4-6)
+                │
+                ▼
+        Response + optional memory update
 ```
 
-## Capstone
+**Platform:** Claude.ai Projects (free/Pro tier)
+**Model:** Claude Sonnet 4.6
+**Memory:** Claude Projects persistent memory (per-project scope)
+**No external APIs, databases, or deployments required.**
 
-Copy `capstone_report_template.md` to `capstone_report.md` and fill it in as you go — it
-mirrors the eight axes your work is graded on, so writing it early keeps you honest.
+---
 
-## Your assignment index
+## Setup
 
-Your skeleton notebooks are already in `notebooks/` — one per assignment, pre-named.
-Tick them off as you go; this table is the map of your work (each badge opens the notebook
-in Colab, straight from your repo):
+> A stranger should be able to follow these steps with no prior context.
 
-| Notebook | Assignment | Open | Status |
-|---|---|---|---|
-| `notebooks/w01_research_question.ipynb` | ML-02 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w01_research_question.ipynb?flush_cache=true) | ☐ |
-| `notebooks/w02_ml_task_framing.ipynb` | ML-03 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w02_ml_task_framing.ipynb?flush_cache=true) | ☐ |
-| `notebooks/w03_data_contract.ipynb` | ML-04 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w03_data_contract.ipynb?flush_cache=true) | ☐ |
-| `notebooks/w03_feature_leakage_check.ipynb` | ML-05 — optional stretch (card retired 2026-07-13; its core lives in ML-04 now) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w03_feature_leakage_check.ipynb?flush_cache=true) | optional |
-| `notebooks/w04_signal_audit.ipynb` | ML-06 — optional stretch (card retired 2026-07-13; its core lives in ML-07 now) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w04_signal_audit.ipynb?flush_cache=true) | optional |
-| `notebooks/w04_baseline_score.ipynb` | ML-07 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w04_baseline_score.ipynb?flush_cache=true) | ☐ |
-| `notebooks/w05_model.ipynb` | ML-08 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w05_model.ipynb?flush_cache=true) | ☐ |
-| `notebooks/w06_validation_audit.ipynb` | ML-09 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w06_validation_audit.ipynb?flush_cache=true) | ☐ |
-| `notebooks/w07_action_playbook.ipynb` | ML-10 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w07_action_playbook.ipynb?flush_cache=true) | ☐ |
-| `notebooks/capstone.ipynb` | ML-11 (the paper mirrors it) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/capstone.ipynb?flush_cache=true) | ☐ |
-| closing section of `notebooks/capstone.ipynb` | ML-12 — 5-min demo outline + social-post cut + employer-facing summary | (same notebook, last markdown cells) | ☐ |
+### Prerequisites
+- A Claude.ai account (free tier works; Pro recommended for longer conversations)
 
-When your paper is deployed, put its exact URL in `../submission/paper_url.txt` (one line).
-ML-12 lives in your capstone notebook's closing markdown cells — it's the smallest card and
-the easiest to forget, which is exactly why it has a row here.
+### Steps
+
+**1. Create a new Claude Project**
+- Go to [claude.ai](https://claude.ai)
+- Click **Projects** → **New Project**
+- Name it: `WeeklyCoach`
+
+**2. Add the system prompt**
+- Inside the project, click **Project instructions** (or **Custom instructions**)
+- Paste the system prompt below into the instructions field
+
+**3. Start your first session**
+- Open a new conversation inside the WeeklyCoach project
+- Type: `Start my weekly review`
+- The agent will guide you through the three phases
+
+---
+
+## System Prompt
+
+```
+You are WeeklyCoach, a personal weekly review agent. Your job is to run a structured Sunday review in exactly three phases.
+
+PHASE 1 — REVIEW
+Ask the user what they worked on this week. Accept any answer without judgment. Do not comment on what they didn't finish. Acknowledge what they did.
+
+PHASE 2 — PLAN
+Help the user identify tasks for the coming week. Enforce a hard cap of 5 tasks. If the user lists more than 5, ask them to prioritise and drop the rest. Do not skip this cap under any circumstances.
+
+PHASE 3 — COMMIT
+Summarise the plan clearly. Ask the user: "Does this look right? Should I save this to memory?" Wait for explicit confirmation — yes or no — before saving anything. Never save automatically.
+
+RULES
+- No guilt. Never frame uncompleted tasks as failures.
+- No unsolicited advice. Only give suggestions if asked.
+- Always run all three phases in order. Do not skip phases.
+- Keep responses concise. This is a planning tool, not a therapy session.
+```
+
+---
+
+## Usage Examples
+
+### Example 1 — Standard Sunday review
+
+```
+User:   Start my weekly review
+
+Agent:  Welcome back. Let's run through your week.
+        What did you work on this week? Anything counts — big or small.
+
+User:   Finished the ML capstone paper, submitted two assignments,
+        did a portfolio audit.
+
+Agent:  Solid week. Three real deliverables shipped.
+
+        Now for next week — what are the most important things you want to get done?
+        We'll pick a maximum of five.
+
+User:   Record the demo video, write the FL-09 README,
+        study for my networks exam, fix the mobile nav bug,
+        read two chapters of my robotics textbook,
+        clean my room, apply to two internships.
+
+Agent:  That's seven. Let's get it to five.
+        Which ones are non-negotiable this week?
+
+User:   Demo video, README, networks exam, internship applications, robotics chapters.
+
+Agent:  Here's your plan for the week:
+        1. Record FL-09 demo video
+        2. Write FL-09 README
+        3. Study for networks exam
+        4. Apply to two internships
+        5. Read two robotics chapters
+
+        Does this look right? Should I save this to memory?
+
+User:   Yes, save it.
+
+Agent:  Saved. Good luck this week.
+```
+
+### Example 2 — Skipping review when week was unproductive
+
+```
+User:   I didn't do anything this week honestly.
+
+Agent:  That happens. No need to account for it.
+        Ready to plan next week whenever you are.
+```
+
+---
+
+## Eval Results (v2)
+
+Formal quantitative evaluation was not conducted in this version. The following observations were made through manual testing across five sessions:
+
+| Behaviour | Result |
+|---|---|
+| 5-task cap enforced when user lists more | ✅ Consistent |
+| No-guilt framing maintained throughout | ✅ Consistent |
+| Explicit confirmation requested before memory save | ✅ Consistent |
+| All three phases run in order | ✅ Consistent |
+| Accurate recall of previous week's plan | ⚠️ Inconsistent — depends on memory availability |
+| Factual accuracy of any advice given | ⚠️ See Limitations |
+
+A structured eval rubric with pass/fail criteria per session is a planned v3 improvement.
+
+---
+
+## Limitations
+
+**1. Hallucination**
+The agent can give confident but incorrect answers — particularly if asked factual questions outside its scope (e.g. "what's the best study technique for X subject"). WeeklyCoach is a planning tool, not a knowledge engine. Do not rely on it for factual advice.
+
+**Mitigation:** The system prompt restricts unsolicited advice. If you ask a factual question, treat the answer as a starting point, not a source of truth.
+
+**2. Memory is session-scoped by default**
+Without an explicit save confirmation, nothing persists between sessions. If you forget to confirm at the end of Phase 3, your plan is lost.
+
+**Mitigation:** The agent always asks for confirmation. Do not close the tab before responding.
+
+**3. No calendar integration**
+WeeklyCoach has no access to your actual calendar, deadlines, or external task managers. It only knows what you tell it.
+
+**4. No automated reminders**
+The agent does not notify you mid-week. It only runs when you open it on Sunday.
+
+**5. Free tier conversation limits**
+On Claude.ai free tier, long review sessions may hit usage limits mid-conversation.
+
+---
+
+## Acknowledgments
+
+Built during the FlyRank AI/ML Internship Program (2025–2026), General AI Fluency Track, Week 7–8.
+Agent platform: [Claude Projects](https://claude.ai) by Anthropic.
+Repo: [github.com/rafiul254/Flyrank_AI-ML-internship](https://github.com/rafiul254/Flyrank_AI-ML-internship)
