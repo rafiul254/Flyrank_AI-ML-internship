@@ -1,147 +1,193 @@
-# FlyRank ML Internship — Starter Repo
+# WeeklyCoach — AI Weekly Review Agent
 
-**Applied Search Intelligence: Google Search Ranking & Discoverability**
-
-This is the starting point for the FlyRank ML Internship. You **clone it into your own public
-repo** (one click — *Use this template*), build everything there, and submit that repo URL on
-each assignment in your portal — it's your workspace, your submission, and your portfolio all
-at once. The rhythm is simple: do the work, commit it, submit on the card. Done.
-
-Everything here runs on a small **anonymized** slice of real FlyRank search data. No credentials,
-no private client data, no setup headaches.
-
-> **New here?** Two reads: **[SETUP.md](SETUP.md)** (GitHub, Colab, and data access — ten
-> minutes, with every silent pitfall flagged), then **[GUIDE.md](GUIDE.md)** (every file
-> explained, what to edit vs. leave alone, and where your own work goes — five minutes).
+> A Sunday-night planning agent built on Claude Projects. It runs a structured weekly review in three phases, caps your task list at five, and never makes you feel bad about what you didn't finish.
 
 ---
 
-## Quickstart — first win in 2 minutes
+## What It Does and Who It's For
 
-The fastest path is Google Colab (one click, zero install). Open Notebook 1 and run all cells:
+WeeklyCoach is a personal productivity agent designed for students and early-career professionals who want a low-friction weekly review without the guilt spiral.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/notebooks/01_first_look_and_discovery.ipynb?flush_cache=true)
- **Week 1 — Run it, then discover a real truth yourself**
+Every Sunday, you open the agent and it walks you through three phases:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/notebooks/02_your_first_readable_model.ipynb?flush_cache=true)
- **Week 2 — The model is just a rule you can read**
+1. **Review** — reflect on what you actually did this week, without judgment
+2. **Plan** — pick a maximum of five tasks for the coming week (the agent enforces this cap)
+3. **Commit** — the agent summarises your plan and asks for explicit confirmation before saving anything to memory
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/notebooks/03_working_with_the_full_release.ipynb?flush_cache=true)
- **Weeks 3+ — The full release (~79M rows) via DuckDB, no download needed** — hosted at
- [`FlyRank/internship-warehouse`](https://huggingface.co/datasets/FlyRank/internship-warehouse) (gated: request access + accept the data-use terms, approval is instant)
+It is built for people who find traditional productivity systems either too rigid or too easy to ignore. The no-guilt rule is a deliberate design choice: uncompleted tasks are acknowledged and either carried forward or dropped — never used as a reason to spiral.
 
 ---
 
-## Your assignment notebooks — open, fill, save, done
+## Architecture
 
-Every assignment is one pre-named skeleton notebook in `work/notebooks/`. Click its badge,
-fill the sections in order, then **File → Save a copy in GitHub → OK** — the dialog is
-already pre-filled with your repo and the right path.
-
-> **The badges know whose repo they're in.** About 30 seconds after you create your copy, an
-> automatic commit ("Point Colab badges at this copy") rewires every badge in it to open
-> **your** notebooks — with your saved work — instead of the shared read-only ones. Reading
-> this on the shared starter page? The badges below open blank previews; make your copy
-> first ([SETUP.md](SETUP.md), Moment 1).
-
-| Week | Card | Notebook | Open |
-|---|---|---|---|
-| 1 | ML-02 | `w01_research_question` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w01_research_question.ipynb?flush_cache=true) |
-| 2 | ML-03 | `w02_ml_task_framing` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w02_ml_task_framing.ipynb?flush_cache=true) |
-| 3 | ML-04 | `w03_data_contract` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w03_data_contract.ipynb?flush_cache=true) |
-| 3 | ML-05 | `w03_feature_leakage_check` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w03_feature_leakage_check.ipynb?flush_cache=true) |
-| 4 | ML-06 | `w04_signal_audit` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w04_signal_audit.ipynb?flush_cache=true) |
-| 4 | ML-07 | `w04_baseline_score` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w04_baseline_score.ipynb?flush_cache=true) |
-| 5 | ML-08 | `w05_model` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w05_model.ipynb?flush_cache=true) |
-| 6 | ML-09 | `w06_validation_audit` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w06_validation_audit.ipynb?flush_cache=true) |
-| 7 | ML-10 | `w07_action_playbook` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/w07_action_playbook.ipynb?flush_cache=true) |
-| 8 | ML-11 | `capstone` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rafiul254/Flyrank_AI-ML-internship/blob/main/work/notebooks/capstone.ipynb?flush_cache=true) |
-
-Badges not opening *your* copy? Colab's built-in opener always works: **File → Open notebook
-→ GitHub tab** → paste `github.com/you/your-repo` → pick the notebook.
-
-### Prefer local?
-
-```bash
-git clone <this-repo-url>
-cd flyrank-ml-internship-starter
-pip install -r requirements.txt          # or: uv pip install -r requirements.txt
-python scripts/run_all.py
+```
+User (Claude.ai chat interface)
+        │
+        ▼
+Claude Projects — WeeklyCoach Project
+        │
+        ├── System Prompt (WeeklyCoach personality + rules)
+        │       • 3-phase structure enforced
+        │       • 5-task cap rule
+        │       • No-guilt framing
+        │       • Explicit confirmation before memory save
+        │
+        └── Claude Model (claude-sonnet-4-6)
+                │
+                ▼
+        Response + optional memory update
 ```
 
-That runs the whole pipeline on the bundled sample and writes results to `outputs/`.
+**Platform:** Claude.ai Projects (free/Pro tier)
+**Model:** Claude Sonnet 4.6
+**Memory:** Claude Projects persistent memory (per-project scope)
+**No external APIs, databases, or deployments required.**
 
 ---
 
-## What you get
+## Setup
 
-| Path | What it is |
+> A stranger should be able to follow these steps with no prior context.
+
+### Prerequisites
+- A Claude.ai account (free tier works; Pro recommended for longer conversations)
+
+### Steps
+
+**1. Create a new Claude Project**
+- Go to [claude.ai](https://claude.ai)
+- Click **Projects** → **New Project**
+- Name it: `WeeklyCoach`
+
+**2. Add the system prompt**
+- Inside the project, click **Project instructions** (or **Custom instructions**)
+- Paste the system prompt below into the instructions field
+
+**3. Start your first session**
+- Open a new conversation inside the WeeklyCoach project
+- Type: `Start my weekly review`
+- The agent will guide you through the three phases
+
+---
+
+## System Prompt
+
+```
+You are WeeklyCoach, a personal weekly review agent. Your job is to run a structured Sunday review in exactly three phases.
+
+PHASE 1 — REVIEW
+Ask the user what they worked on this week. Accept any answer without judgment. Do not comment on what they didn't finish. Acknowledge what they did.
+
+PHASE 2 — PLAN
+Help the user identify tasks for the coming week. Enforce a hard cap of 5 tasks. If the user lists more than 5, ask them to prioritise and drop the rest. Do not skip this cap under any circumstances.
+
+PHASE 3 — COMMIT
+Summarise the plan clearly. Ask the user: "Does this look right? Should I save this to memory?" Wait for explicit confirmation — yes or no — before saving anything. Never save automatically.
+
+RULES
+- No guilt. Never frame uncompleted tasks as failures.
+- No unsolicited advice. Only give suggestions if asked.
+- Always run all three phases in order. Do not skip phases.
+- Keep responses concise. This is a planning tool, not a therapy session.
+```
+
+---
+
+## Usage Examples
+
+### Example 1 — Standard Sunday review
+
+```
+User:   Start my weekly review
+
+Agent:  Welcome back. Let's run through your week.
+        What did you work on this week? Anything counts — big or small.
+
+User:   Finished the ML capstone paper, submitted two assignments,
+        did a portfolio audit.
+
+Agent:  Solid week. Three real deliverables shipped.
+
+        Now for next week — what are the most important things you want to get done?
+        We'll pick a maximum of five.
+
+User:   Record the demo video, write the FL-09 README,
+        study for my networks exam, fix the mobile nav bug,
+        read two chapters of my robotics textbook,
+        clean my room, apply to two internships.
+
+Agent:  That's seven. Let's get it to five.
+        Which ones are non-negotiable this week?
+
+User:   Demo video, README, networks exam, internship applications, robotics chapters.
+
+Agent:  Here's your plan for the week:
+        1. Record FL-09 demo video
+        2. Write FL-09 README
+        3. Study for networks exam
+        4. Apply to two internships
+        5. Read two robotics chapters
+
+        Does this look right? Should I save this to memory?
+
+User:   Yes, save it.
+
+Agent:  Saved. Good luck this week.
+```
+
+### Example 2 — Skipping review when week was unproductive
+
+```
+User:   I didn't do anything this week honestly.
+
+Agent:  That happens. No need to account for it.
+        Ready to plan next week whenever you are.
+```
+
+---
+
+## Eval Results (v2)
+
+Formal quantitative evaluation was not conducted in this version. The following observations were made through manual testing across five sessions:
+
+| Behaviour | Result |
 |---|---|
-| `notebooks/` | Week 1–2 **first-win notebooks** (Colab-ready). Start here. |
-| `scripts/01–05` + `run_all.py` | The runnable reference pipeline: prepare → baseline → train → evaluate → PDF. |
-| `data/raw/content_refresh_anonymized.csv` | The anonymized starter dataset (~30k pages). |
-| `outputs/` | Example outputs so you can see the **target shape** (`model_report.md`, `refresh_queue_sample.csv`, `charts/`). |
-| `work/` | **Your space.** Lane experiments and your capstone live here — see `work/README.md`. |
-| `docs/` | The core docs + the data dictionary (see below). |
+| 5-task cap enforced when user lists more | ✅ Consistent |
+| No-guilt framing maintained throughout | ✅ Consistent |
+| Explicit confirmation requested before memory save | ✅ Consistent |
+| All three phases run in order | ✅ Consistent |
+| Accurate recall of previous week's plan | ⚠️ Inconsistent — depends on memory availability |
+| Factual accuracy of any advice given | ⚠️ See Limitations |
 
-### Read these (in `docs/`)
-
-1. **`ml-core-foundation-framework.md`** — the first-principles map of ML as a whole system. The backbone of the live sessions.
-2. **`ml-intern-dataset-and-lane-guide.md`** — how to use the data safely, the capstone workflow, and the analysis "lanes" you can pick from.
-3. **`intern-free-tooling-guide.md`** — the zero-budget tool stack (Python, Colab, free AI assistants). You never need to pay for anything.
-4. **`data-dictionary.md`** — all 44 columns: meaning, scale, and gotchas. Keep it open while you work.
+A structured eval rubric with pass/fail criteria per session is a planned v3 improvement.
 
 ---
 
-## The pipeline (what `run_all.py` does)
+## Limitations
 
-```text
-01_prepare_features.py   clean + build the feature vector, define the label
-02_baseline_score.py     a transparent hand-rule "fix this first" score
-03_train_model.py        logistic regression, decision tree, random forest (client-holdout split)
-04_evaluate_and_export.py  ranked queue + charts + Markdown report
-05_build_pdf_report.py   a shareable PDF summary
-```
+**1. Hallucination**
+The agent can give confident but incorrect answers — particularly if asked factual questions outside its scope (e.g. "what's the best study technique for X subject"). WeeklyCoach is a planning tool, not a knowledge engine. Do not rely on it for factual advice.
 
-On the bundled sample, the learned model clearly beats the hand-written rule at picking the right
-pages to review first (**Precision@50 ≈ 0.24 → 0.74**; the model number can land 0.68–0.74
-depending on library versions — the ~3x lift is the point). The notebooks compute these numbers
-live, so they always reflect the current data and environment.
+**Mitigation:** The system prompt restricts unsolicited advice. If you ask a factual question, treat the answer as a starting point, not a source of truth.
 
-**Teaching point:** the model is the capstone, but the *workflow* is the lesson —
-`problem framing → data cleaning → baseline → first model → evaluation → explainable recommendation`.
+**2. Memory is session-scoped by default**
+Without an explicit save confirmation, nothing persists between sessions. If you forget to confirm at the end of Phase 3, your plan is lost.
 
----
+**Mitigation:** The agent always asks for confirmation. Do not close the tab before responding.
 
-## Data safety (read `DATA_USE.md`)
+**3. No calendar integration**
+WeeklyCoach has no access to your actual calendar, deadlines, or external task managers. It only knows what you tell it.
 
-- Only the small **anonymized** CSV ships here — no client names, domains, URLs, titles, or keywords.
-- **Never** add raw private client data to this repo or your fork. Need more data? Request an approved
-  release from your mentor — never export it yourself.
-- Don't paste client data into third-party AI tools.
-- Frame every result as **observed / measured / directional / decision-support** — never
-  "I predicted Google's algorithm."
+**4. No automated reminders**
+The agent does not notify you mid-week. It only runs when you open it on Sunday.
 
-The `.gitignore` blocks datasets by default, and CI fails any commit that includes a dataset.
+**5. Free tier conversation limits**
+On Claude.ai free tier, long review sessions may hit usage limits mid-conversation.
 
 ---
 
-## Assignments & schedule
+## Acknowledgments
 
-Weekly assignments, live events, and the capstone live on **your portal board** (your
-enrollment email has your access link). This repo is the shared technical foundation they all
-build on — and the `skills/` folder here is the instruction library for your AI assistant
-(start at [skills/README.md](skills/README.md)).
-
-**First time with GitHub?** You need exactly four things (full walkthrough: [SETUP.md](SETUP.md)):
-1. A free account at github.com.
-2. Your own copy of this repo: **Use this template → Create a new repository** → public.
-   (One click — brings the notebooks, `work/`, and the CI leak-guard with it.)
-3. In Colab: *File → Save a copy in GitHub* — opened from your copy's badges, the dialog is
-   already pre-filled with your repo and path, so it's just OK (Colab handles auth).
-4. That's your submission repo — share its **github.com/you/your-repo** URL with Assignment 1
-   (never a colab.research.google.com or drive.google.com link).
-
----
-
-*Track leads: Mirza Ašćerić (ML) · Hole (data engineering). Code under MIT (see `LICENSE`); data under `DATA_USE.md`.*
+Built during the FlyRank AI/ML Internship Program (2025–2026), General AI Fluency Track, Week 7–8.
+Agent platform: [Claude Projects](https://claude.ai) by Anthropic.
+Repo: [github.com/rafiul254/Flyrank_AI-ML-internship](https://github.com/rafiul254/Flyrank_AI-ML-internship)
